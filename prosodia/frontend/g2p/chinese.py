@@ -7,15 +7,26 @@ synthesis frontend needs: splitting each syllable into an initial/final pair of
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from pypinyin import Style, lazy_pinyin
 
 from prosodia.frontend.symbols import split_initial_final
 from prosodia.types import Phone, Syllable
 
 
+@lru_cache(maxsize=4096)
+def _cached_pinyin(text: str) -> tuple[str, ...]:
+    return tuple(lazy_pinyin(text, style=Style.TONE3, neutral_tone_with_five=True))
+
+
 def to_pinyin(text: str) -> list[str]:
-    """Return TONE3 pinyin syllables, neutral tone marked as 5."""
-    return lazy_pinyin(text, style=Style.TONE3, neutral_tone_with_five=True)
+    """Return TONE3 pinyin syllables, neutral tone marked as 5.
+
+    pypinyin lookups are memoized in-process, so repeated CJK runs (common in
+    streaming and batch synthesis) skip the dictionary walk.
+    """
+    return list(_cached_pinyin(text))
 
 
 def pinyin_to_syllable(pinyin: str) -> Syllable:

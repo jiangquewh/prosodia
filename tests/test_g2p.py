@@ -29,3 +29,13 @@ def test_english_g2p_marks_vowels():
     symbols = [p.symbol for p in syls[0].phones]
     assert "h" in symbols
     assert any(p.is_vowel for p in syls[0].phones)
+
+
+def test_to_pinyin_is_cached_and_copy_safe():
+    from prosodia.frontend.g2p.chinese import _cached_pinyin
+
+    first = to_pinyin("缓存")
+    first.append("junk")
+    hits = _cached_pinyin.cache_info().hits
+    assert to_pinyin("缓存") == ["huan3", "cun2"]
+    assert _cached_pinyin.cache_info().hits == hits + 1
